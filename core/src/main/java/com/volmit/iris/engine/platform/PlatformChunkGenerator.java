@@ -26,7 +26,7 @@ import com.volmit.iris.util.data.DataProvider;
 import org.bukkit.World;
 
 import java.util.concurrent.CompletableFuture;
-import java.util.function.Consumer;
+import java.util.concurrent.Executor;
 
 public interface PlatformChunkGenerator extends Hotloadable, DataProvider {
     Engine getEngine();
@@ -40,7 +40,7 @@ public interface PlatformChunkGenerator extends Hotloadable, DataProvider {
         return getEngine().getTarget();
     }
 
-    void injectChunkReplacement(World world, int x, int z, Consumer<Runnable> jobs);
+    void injectChunkReplacement(World world, int x, int z, Executor syncExecutor);
 
     void close();
 
