@@ -116,7 +116,7 @@ public class IrisEntitySpawn implements IRare {
         World world = gen.getWorld().realWorld();
         if (spawns > 0) {
 
-            if (referenceMarker != null) {
+            if (referenceMarker != null && referenceMarker.shouldExhaust()) {
                 gen.getMantle().getMantle().remove(c.getX(), c.getY() - gen.getWorld().minHeight(), c.getZ(), MatterMarker.class);
             }
 
