@@ -22,14 +22,13 @@ import com.volmit.iris.Iris;
 import com.volmit.iris.util.documentation.ChunkCoordinates;
 import com.volmit.iris.util.function.Consumer4;
 import com.volmit.iris.util.io.CountingDataInputStream;
+import com.volmit.iris.util.io.IO;
 import com.volmit.iris.util.matter.IrisMatter;
 import com.volmit.iris.util.matter.Matter;
 import com.volmit.iris.util.matter.MatterSlice;
 import lombok.Getter;
 
-import java.io.ByteArrayOutputStream;
-import java.io.DataOutputStream;
-import java.io.IOException;
+import java.io.*;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicIntegerArray;
 import java.util.concurrent.atomic.AtomicReferenceArray;
@@ -72,7 +71,31 @@ public class MantleChunk {
      * @throws IOException            shit happens
      * @throws ClassNotFoundException shit happens
      */
-    public MantleChunk(int sectionHeight, CountingDataInputStream din) throws IOException {
+    public MantleChunk(int sectionHeight, DataInputStream din) throws IOException, ClassNotFoundException {
+        this(sectionHeight, din.readByte(), din.readByte());
+        int s = din.readByte();
+
+        for (int i = 0; i < 14; i++) {
+            flags.set(i, din.readBoolean() ? 1 : 0);
+        }
+
+        for (int i = 0; i < s; i++) {
+            Iris.addPanic("read.section", "Section[" + i + "]");
+            if (din.readBoolean()) {
+                sections.set(i, Matter.readDinOld(din));
+            }
+        }
+    }
+
+    /**
+     * Load a mantle chunk from a data stream
+     *
+     * @param sectionHeight the height of the world in sections (blocks >> 4)
+     * @param din           the data input
+     * @throws IOException            shit happens
+     * @throws ClassNotFoundException shit happens
+     */
+    public MantleChunk(int sectionHeight, CountingDataInputStream din) throws IOException, RuntimeException {
         this(sectionHeight, din.readByte(), din.readByte());
         int s = din.readByte();
 
@@ -97,8 +120,15 @@ public class MantleChunk {
                 e.printStackTrace();
                 Iris.panic();
 
-                din.skipTo(end);
+                try {
+                    din.skipTo(end);
+                } catch (IOException ex) {
+                    throw new RuntimeException(ex);
+                }
+
                 TectonicPlate.addError();
+            } catch (RuntimeException e) {
+                throw new RuntimeException(e);
             }
         }
     }

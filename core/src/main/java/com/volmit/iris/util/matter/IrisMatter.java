@@ -43,7 +43,7 @@ public class IrisMatter extends IrisRegistrant implements Matter {
     @Getter
     private final KMap<Class<?>, MatterSlice<?>> sliceMap;
 
-    public IrisMatter(int width, int height, int depth) {
+    public IrisMatter(int width, int height, int depth) throws RuntimeException {
         if (width < 1 || height < 1 || depth < 1) {
             throw new RuntimeException("Invalid Matter Size " + width + "x" + height + "x" + depth);
         }

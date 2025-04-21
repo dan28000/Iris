@@ -149,7 +149,7 @@ public class MultiBurst {
             service.shutdown();
             PrecisionStopwatch p = PrecisionStopwatch.start();
             try {
-                while (!service.awaitTermination(1, TimeUnit.SECONDS)) {
+                while (!service.awaitTermination(10, TimeUnit.MINUTES)) {
                     Iris.info("Still waiting to shutdown burster...");
                     if (p.getMilliseconds() > 7000) {
                         Iris.warn("Forcing Shutdown...");

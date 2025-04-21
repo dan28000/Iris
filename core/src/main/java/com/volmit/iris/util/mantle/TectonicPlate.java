@@ -38,6 +38,7 @@ import java.nio.file.Files;
 import java.nio.file.StandardCopyOption;
 import java.nio.file.StandardOpenOption;
 import java.util.concurrent.atomic.AtomicReferenceArray;
+import java.util.zip.GZIPInputStream;
 
 /**
  * Tectonic Plates are essentially representations of regions in minecraft.
@@ -73,8 +74,43 @@ public class TectonicPlate {
      * @param worldHeight the height of the world
      * @param din         the data input
      * @throws IOException            shit happens yo
+     * @throws ClassNotFoundException real shit bro
      */
-    public TectonicPlate(int worldHeight, CountingDataInputStream din) throws IOException {
+    public TectonicPlate(int worldHeight, DataInputStream din) throws IOException, ClassNotFoundException {
+        this(worldHeight, din.readInt(), din.readInt());
+        for (int i = 0; i < chunks.length(); i++) {
+            if (din.readBoolean()) {
+                Iris.addPanic("read-chunk", "Chunk[" + i + "]");
+                chunks.set(i, new MantleChunk(sectionHeight, din));
+                EnginePanic.saveLast();
+            }
+        }
+    }
+
+    public static TectonicPlate read_old(int worldHeight, File file) throws IOException, ClassNotFoundException {
+        FileInputStream fin = new FileInputStream(file);
+        DataInputStream din;
+        if (file.getName().endsWith("ttp.lz4b")) {
+            LZ4BlockInputStream lz4 = new LZ4BlockInputStream(fin);
+            din = new DataInputStream(new BufferedInputStream(lz4));
+        } else {
+            GZIPInputStream gzi = new GZIPInputStream(fin);
+            din = new DataInputStream(new BufferedInputStream(gzi));
+        }
+        TectonicPlate p = new TectonicPlate(worldHeight, din);
+        din.close();
+
+        return p;
+    }
+
+    /**
+     * Load a tectonic plate from a data stream
+     *
+     * @param worldHeight the height of the world
+     * @param din         the data input
+     * @throws IOException            shit happens yo
+     */
+    public TectonicPlate(int worldHeight, CountingDataInputStream din) throws IOException, RuntimeException {
         this(worldHeight, din.readInt(), din.readInt());
         if (!din.markSupported())
             throw new IOException("Mark not supported!");
@@ -88,6 +124,8 @@ public class TectonicPlate {
                 Iris.addPanic("read-chunk", "Chunk[" + i + "]");
                 chunks.set(i, new MantleChunk(sectionHeight, din));
                 EnginePanic.saveLast();
+            } catch (RuntimeException e) {
+                throw new RuntimeException(e);
             } catch (Throwable e) {
                 long end = start + size;
                 Iris.error("Failed to read chunk, creating a new chunk instead.");
@@ -103,7 +141,7 @@ public class TectonicPlate {
         }
     }
 
-    public static TectonicPlate read(int worldHeight, File file) throws IOException {
+    public static TectonicPlate read(int worldHeight, File file) throws IOException, RuntimeException {
         try (FileChannel fc = FileChannel.open(file.toPath(), StandardOpenOption.READ, StandardOpenOption.WRITE, StandardOpenOption.SYNC)) {
             fc.lock();
 
@@ -112,6 +150,8 @@ public class TectonicPlate {
             BufferedInputStream bis = new BufferedInputStream(lz4);
             try (CountingDataInputStream din = CountingDataInputStream.wrap(bis)) {
                 return new TectonicPlate(worldHeight, din);
+            } catch (RuntimeException e) {
+                throw new RuntimeException(e);
             }
         } finally {
             if (errors.remove(Thread.currentThread())) {

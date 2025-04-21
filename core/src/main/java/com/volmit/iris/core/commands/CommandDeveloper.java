@@ -25,7 +25,9 @@ import com.volmit.iris.core.nms.datapack.DataVersion;
 import com.volmit.iris.core.service.IrisEngineSVC;
 import com.volmit.iris.core.tools.IrisPackBenchmarking;
 import com.volmit.iris.core.tools.IrisToolbelt;
+import com.volmit.iris.engine.IrisEngineMantle;
 import com.volmit.iris.engine.framework.Engine;
+import com.volmit.iris.engine.mantle.EngineMantle;
 import com.volmit.iris.engine.object.IrisDimension;
 import com.volmit.iris.util.decree.DecreeExecutor;
 import com.volmit.iris.util.decree.DecreeOrigin;
@@ -124,16 +126,78 @@ public class CommandDeveloper implements DecreeExecutor {
         int maxHeight = engine.getTarget().getHeight();
         File folder = new File(Bukkit.getWorldContainer(), world.getName());
         int c = 0;
-        //MCAUtil.read()
 
         File tectonicplates = new File(folder, "mantle");
         for (File i : Objects.requireNonNull(tectonicplates.listFiles())) {
-            TectonicPlate.read(maxHeight, i);
+            try {
+                TectonicPlate.read(maxHeight, i);
+                Iris.info("read");
+            } catch (RuntimeException e) {
+                try {
+                    TectonicPlate.read_old(maxHeight, i);
+                    Iris.info("read_old");
+                } catch (Throwable ex) {
+                    continue;
+                }
+            } catch (Throwable throwable) {
+                throwable.printStackTrace();
+                continue;
+            }
+
             c++;
             Iris.info("Loaded count: " + c );
+        }
+    }
 
+    @Decree(description = "Test")
+    public void convertMantle(
+            @Param(description = "converts mantle from 3.4.2 and below format to the latest format and tests new format as well", aliases = {"world"})
+            World world
+    ) {
+        Engine engine = IrisToolbelt.access(world).getEngine();
+        EngineMantle mantle = engine.getMantle();
+        mantle.trim(Long.MAX_VALUE, Integer.MAX_VALUE);
+
+        int maxHeight = engine.getTarget().getHeight();
+        File folder = new File(Bukkit.getWorldContainer(), world.getName());
+        int c = 0;
+
+        File tectonicplates = new File(folder, "mantle");
+
+        Map<TectonicPlate, File> plates = new HashMap<>();
+
+        for (File file : Objects.requireNonNull(tectonicplates.listFiles())) {
+            try {
+                plates.put(TectonicPlate.read_old(maxHeight, file), file);
+                c++;
+            } catch (Throwable e) {
+                try {
+                    plates.put(TectonicPlate.read(maxHeight, file), file);
+                } catch (Throwable ex) {
+                    ex.printStackTrace();
+                    continue;
+                }
+            }
+
+            Iris.info("Loaded count: " + c);
         }
 
+        int i = 0;
+
+        for (Map.Entry<TectonicPlate, File> entry : plates.entrySet()) {
+            TectonicPlate plate = entry.getKey();
+            File file = entry.getValue();
+            try {
+                plate.write(file);
+                i++;
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
+
+        Iris.info("Converted " + i + " plates");
+        Iris.info("Shutting down server");
+        Bukkit.shutdown();
     }
 
     @Decree(description = "Test")

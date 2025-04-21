@@ -573,6 +573,10 @@ public class Mantle {
             }
 
             File file = fileForRegion(dataFolder, x, z);
+
+            if (!file.exists())
+                file = new File(dataFolder, file.getName().substring(".lz4b".length()));
+
             if (file.exists()) {
                 try {
                     Iris.addPanic("reading.tectonic-plate", file.getAbsolutePath());
@@ -584,6 +588,14 @@ public class Mantle {
 
                     loadedRegions.put(k, region);
                     Iris.debug("Loaded Tectonic Plate " + C.DARK_GREEN + x + " " + z + C.DARK_AQUA + " " + file.getName());
+                } catch (RuntimeException e) {
+                    try {
+                        region = TectonicPlate.read_old(worldHeight, file);
+                        loadedRegions.put(k, region);
+                        return region;
+                    } catch (Exception ex) {
+                        throw new RuntimeException(e);
+                    }
                 } catch (Throwable e) {
                     Iris.error("Failed to read Tectonic Plate " + file.getAbsolutePath() + " creating a new chunk instead.");
                     Iris.reportError(e);
