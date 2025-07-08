@@ -625,23 +625,6 @@ public class NMSBinding implements INMSBinding {
         return keys;
     }
 
-    private static Field getField(Class<?> clazz, Class<?> fieldType) throws NoSuchFieldException {
-        try {
-            for (Field f : clazz.getDeclaredFields()) {
-                if (f.getType().equals(fieldType))
-                    return f;
-            }
-            throw new NoSuchFieldException(fieldType.getName());
-        } catch (NoSuchFieldException var4) {
-            Class<?> superClass = clazz.getSuperclass();
-            if (superClass == null) {
-                throw var4;
-            } else {
-                return getField(superClass, fieldType);
-            }
-        }
-    }
-
     public static Holder<net.minecraft.world.level.biome.Biome> biomeToBiomeBase(Registry<net.minecraft.world.level.biome.Biome> registry, Biome biome) {
         return registry.getHolderOrThrow(ResourceKey.create(Registries.BIOME, CraftNamespacedKey.toMinecraft(biome.getKey())));
     }

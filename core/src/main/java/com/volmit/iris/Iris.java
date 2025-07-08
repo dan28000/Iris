@@ -28,7 +28,6 @@ import com.volmit.iris.core.link.MultiverseCoreLink;
 import com.volmit.iris.core.link.MythicMobsLink;
 import com.volmit.iris.core.loader.IrisData;
 import com.volmit.iris.core.nms.INMS;
-import com.volmit.iris.core.nms.INMSBinding;
 import com.volmit.iris.core.nms.v1X.NMSBinding1X;
 import com.volmit.iris.core.pregenerator.LazyPregenerator;
 import com.volmit.iris.core.service.StudioSVC;
@@ -454,7 +453,6 @@ public class Iris extends VolmitPlugin implements Listener {
         setupAudience();
         Bindings.setupSentry();
         initialize("com.volmit.iris.core.service").forEach((i) -> services.put((Class<? extends IrisService>) i.getClass(), (IrisService) i));
-        ServerProperties.init(INMS.get());
         IO.delete(new File("iris"));
         compat = IrisCompat.configured(getDataFile("compat.json"));
         ServerConfigurator.configure();

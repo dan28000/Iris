@@ -1,7 +1,5 @@
 package com.volmit.iris.util.misc;
 
-import com.volmit.iris.core.nms.INMSBinding;
-
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
@@ -24,13 +22,13 @@ public class ServerProperties {
         WORLD_NAME
     }
 
-    public static void init(INMSBinding inmsBinding) {
-        Map<FILES, Object> fileLocations = inmsBinding.getFileLocations();
+    public static void init() {
+        Map<FILES, File> fileLocations = inmsBinding.getFileLocations();
         if (fileLocations == null) return;
-        SERVER_PROPERTIES = (File) fileLocations.get(FILES.SERVER_PROPERTIES);
-        BUKKIT_YML = (File) fileLocations.get(FILES.BUKKIT_YML);
-        SPIGOT_YML = (File) fileLocations.get(FILES.SPIGOT_YML);
-        PAPER_DIR = (File) fileLocations.get(FILES.PAPER_DIR);
+        SERVER_PROPERTIES = fileLocations.get(FILES.SERVER_PROPERTIES);
+        BUKKIT_YML = fileLocations.get(FILES.BUKKIT_YML);
+        SPIGOT_YML = fileLocations.get(FILES.SPIGOT_YML);
+        PAPER_DIR = fileLocations.get(FILES.PAPER_DIR);
         String levelName = (String) fileLocations.get(FILES.WORLD_NAME);
 
         try (FileInputStream input = new FileInputStream(SERVER_PROPERTIES)) {

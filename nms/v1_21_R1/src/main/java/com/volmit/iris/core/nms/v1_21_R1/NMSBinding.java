@@ -21,6 +21,7 @@ import com.volmit.iris.util.matter.MatterBiomeInject;
 import com.volmit.iris.util.nbt.mca.NBTWorld;
 import com.volmit.iris.util.nbt.mca.palette.*;
 import com.volmit.iris.util.nbt.tag.CompoundTag;
+import com.volmit.iris.util.reflect.NMSRef;
 import com.volmit.iris.util.scheduling.J;
 import it.unimi.dsi.fastutil.objects.Object2IntMap;
 import it.unimi.dsi.fastutil.shorts.ShortList;
@@ -557,7 +558,7 @@ public class NMSBinding implements INMSBinding {
 
     public void inject(long seed, Engine engine, World world) throws NoSuchFieldException, IllegalAccessException {
         var chunkMap = ((CraftWorld)world).getHandle().getChunkSource().chunkMap;
-        var worldGenContextField = getField(chunkMap.getClass(), WorldGenContext.class);
+        var worldGenContextField = NMSRef.getField(chunkMap.getClass(), WorldGenContext.class);
         worldGenContextField.setAccessible(true);
         var worldGenContext = (WorldGenContext) worldGenContextField.get(chunkMap);
         var dimensionType = chunkMap.level.dimensionTypeRegistration().unwrapKey().orElse(null);
@@ -622,23 +623,6 @@ public class NMSBinding implements INMSBinding {
                 return null;
         }
         return new Color(rgba, true);
-    }
-
-    private static Field getField(Class<?> clazz, Class<?> fieldType) throws NoSuchFieldException {
-        try {
-            for (Field f : clazz.getDeclaredFields()) {
-                if (f.getType().equals(fieldType))
-                    return f;
-            }
-            throw new NoSuchFieldException(fieldType.getName());
-        } catch (NoSuchFieldException var4) {
-            Class<?> superClass = clazz.getSuperclass();
-            if (superClass == null) {
-                throw var4;
-            } else {
-                return getField(superClass, fieldType);
-            }
-        }
     }
 
     public static Holder<net.minecraft.world.level.biome.Biome> biomeToBiomeBase(Registry<net.minecraft.world.level.biome.Biome> registry, Biome biome) {

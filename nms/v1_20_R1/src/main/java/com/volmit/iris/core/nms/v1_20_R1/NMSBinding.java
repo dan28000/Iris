@@ -17,14 +17,12 @@ import com.volmit.iris.util.json.JSONObject;
 import com.volmit.iris.util.mantle.Mantle;
 import com.volmit.iris.util.math.Vector3d;
 import com.volmit.iris.util.matter.MatterBiomeInject;
-import com.volmit.iris.util.misc.ServerProperties;
 import com.volmit.iris.util.nbt.mca.NBTWorld;
 import com.volmit.iris.util.nbt.mca.palette.*;
 import com.volmit.iris.util.nbt.tag.CompoundTag;
 import com.volmit.iris.util.reflect.NMSRef;
 import com.volmit.iris.util.scheduling.J;
 import it.unimi.dsi.fastutil.objects.Object2IntMap;
-import joptsimple.OptionSet;
 import net.bytebuddy.ByteBuddy;
 import net.bytebuddy.asm.Advice;
 import net.bytebuddy.matcher.ElementMatchers;
@@ -81,7 +79,6 @@ import org.jetbrains.annotations.NotNull;
 
 import java.awt.*;
 import java.awt.Color;
-import java.io.*;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
@@ -91,7 +88,6 @@ import java.util.List;
 import java.util.concurrent.Executor;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.locks.ReentrantLock;
 
 public class NMSBinding implements INMSBinding {
 
@@ -580,6 +576,23 @@ public class NMSBinding implements INMSBinding {
         return keys;
     }
 
+    private static Field getField(Class<?> clazz, Class<?> fieldType) throws NoSuchFieldException {
+        try {
+            for (Field f : clazz.getDeclaredFields()) {
+                if (f.getType().equals(fieldType))
+                    return f;
+            }
+            throw new NoSuchFieldException(fieldType.getName());
+        } catch (NoSuchFieldException var4) {
+            Class<?> superClass = clazz.getSuperclass();
+            if (superClass == null) {
+                throw var4;
+            } else {
+                return getField(superClass, fieldType);
+            }
+        }
+    }
+
     @Override
     public boolean missingDimensionTypes(String... keys) {
         var type = registry().registryOrThrow(Registries.DIMENSION_TYPE);
@@ -624,25 +637,6 @@ public class NMSBinding implements INMSBinding {
         var dimensionKey = new ResourceLocation("iris", gen.getTarget().getDimension().getDimensionTypeKey());
         var dimensionType = access.lookupOrThrow(Registries.DIMENSION_TYPE).getOrThrow(ResourceKey.create(Registries.DIMENSION_TYPE, dimensionKey));
         return new LevelStem(dimensionType, chunkGenerator(access));
-    }
-
-    @Override
-    public Map<ServerProperties.FILES, Object> getFileLocations() {
-        OptionSet options = ((CraftServer)Bukkit.getServer()).getServer().options;
-        Object bukkit = options.valueOf("bukkit-settings");
-        Object spigot = options.valueOf("spigot-settings");
-        Object paperDir = options.valueOf("paper-settings-directory");
-        Object serverProperties = options.valueOf("config");
-        Object world = options.valueOf("world");
-        if (world == null) world = "world";
-
-        return Map.of(
-                ServerProperties.FILES.SERVER_PROPERTIES, serverProperties,
-                ServerProperties.FILES.BUKKIT_YML, bukkit,
-                ServerProperties.FILES.SPIGOT_YML, spigot,
-                ServerProperties.FILES.PAPER_DIR, paperDir,
-                ServerProperties.FILES.WORLD_NAME, world
-        );
     }
 
     private net.minecraft.world.level.chunk.ChunkGenerator chunkGenerator(RegistryAccess access) {
