@@ -86,7 +86,7 @@ public class ServerConfigurator {
 
         long watchdog = TimeUnit.MINUTES.toMillis(3);
         if (tt < watchdog) {
-            Iris.warn("Updating paper-global.yml watchdog early-warning-delay: " + tt + " -> " + watchdog + " (3 minutes)");
+            Iris.warn("Updating paper.yml watchdog early-warning-delay: " + tt + " -> " + watchdog + " (3 minutes)");
             Iris.warn("You can disable this change (autoconfigureServer) in Iris settings, then change back the value.");
             f.set("watchdog.early-warning-delay", watchdog);
             f.save(spigotConfig);

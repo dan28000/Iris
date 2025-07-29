@@ -54,7 +54,6 @@ import static com.volmit.iris.util.misc.ServerProperties.BUKKIT_YML;
 @Data
 @Accessors(fluent = true, chain = true)
 public class IrisCreator {
-    private static final File BUKKIT_YML = new File("bukkit.yml");
     /**
      * Specify an area to pregenerate during creation
      */

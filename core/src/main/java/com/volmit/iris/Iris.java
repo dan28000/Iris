@@ -53,7 +53,6 @@ import com.volmit.iris.util.math.M;
 import com.volmit.iris.util.math.RNG;
 import com.volmit.iris.util.misc.Bindings;
 import com.volmit.iris.util.misc.SlimJar;
-import com.volmit.iris.util.misc.ServerProperties;
 import com.volmit.iris.util.misc.getHardware;
 import com.volmit.iris.util.parallel.MultiBurst;
 import com.volmit.iris.util.plugin.IrisService;
@@ -442,7 +441,6 @@ public class Iris extends VolmitPlugin implements Listener {
     private void enable() {
         services = new KMap<>();
         setupAudience();
-        ServerProperties.init(INMS.get().getOptions());
         Bindings.setupSentry();
         initialize("com.volmit.iris.core.service").forEach((i) -> services.put((Class<? extends IrisService>) i.getClass(), (IrisService) i));
         IO.delete(new File("iris"));

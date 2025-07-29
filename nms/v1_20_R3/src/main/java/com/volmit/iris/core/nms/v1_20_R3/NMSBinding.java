@@ -17,13 +17,12 @@ import com.volmit.iris.util.json.JSONObject;
 import com.volmit.iris.util.mantle.Mantle;
 import com.volmit.iris.util.math.Vector3d;
 import com.volmit.iris.util.matter.MatterBiomeInject;
-import com.volmit.iris.util.misc.ServerProperties;
 import com.volmit.iris.util.nbt.mca.NBTWorld;
 import com.volmit.iris.util.nbt.mca.palette.*;
 import com.volmit.iris.util.nbt.tag.CompoundTag;
+import com.volmit.iris.util.reflect.NMSRef;
 import com.volmit.iris.util.scheduling.J;
 import it.unimi.dsi.fastutil.objects.Object2IntMap;
-import joptsimple.OptionSet;
 import net.bytebuddy.ByteBuddy;
 import net.bytebuddy.asm.Advice;
 import net.bytebuddy.matcher.ElementMatchers;
@@ -79,8 +78,8 @@ import org.bukkit.inventory.ItemStack;
 import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.NotNull;
 
+import java.awt.*;
 import java.awt.Color;
-import java.io.File;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
@@ -101,56 +100,6 @@ public class NMSBinding implements INMSBinding {
     private final AtomicCache<RegistryAccess> registryAccess = new AtomicCache<>();
     private final AtomicCache<Method> byIdRef = new AtomicCache<>();
     private Field biomeStorageCache = null;
-
-    private static Object getFor(Class<?> type, Object source) {
-        Object o = fieldFor(type, source);
-
-        if (o != null) {
-            return o;
-        }
-
-        return invokeFor(type, source);
-    }
-
-    private static Object invokeFor(Class<?> returns, Object in) {
-        for (Method i : in.getClass().getMethods()) {
-            if (i.getReturnType().equals(returns)) {
-                i.setAccessible(true);
-                try {
-                    Iris.debug("[NMS] Found " + returns.getSimpleName() + " in " + in.getClass().getSimpleName() + "." + i.getName() + "()");
-                    return i.invoke(in);
-                } catch (Throwable e) {
-                    e.printStackTrace();
-                }
-            }
-        }
-
-        return null;
-    }
-
-    private static Object fieldFor(Class<?> returns, Object in) {
-        return fieldForClass(returns, in.getClass(), in);
-    }
-
-    @SuppressWarnings("unchecked")
-    private static <T> T fieldForClass(Class<T> returnType, Class<?> sourceType, Object in) {
-        for (Field i : sourceType.getDeclaredFields()) {
-            if (i.getType().equals(returnType)) {
-                i.setAccessible(true);
-                try {
-                    Iris.debug("[NMS] Found " + returnType.getSimpleName() + " in " + sourceType.getSimpleName() + "." + i.getName());
-                    return (T) i.get(in);
-                } catch (IllegalAccessException e) {
-                    e.printStackTrace();
-                }
-            }
-        }
-        return null;
-    }
-
-    private static Class<?> getClassType(Class<?> type, int ordinal) {
-        return type.getDeclaredClasses()[ordinal];
-    }
 
     @Override
     public boolean hasTile(Material material) {
@@ -270,7 +219,7 @@ public class NMSBinding implements INMSBinding {
     }
 
     private RegistryAccess registry() {
-        return registryAccess.aquire(() -> (RegistryAccess) getFor(RegistryAccess.Frozen.class, ((CraftServer) Bukkit.getServer()).getHandle().getServer()));
+        return registryAccess.aquire(() -> (RegistryAccess) NMSRef.getFor(RegistryAccess.Frozen.class, ((CraftServer) Bukkit.getServer()).getHandle().getServer()));
     }
 
     private Registry<net.minecraft.world.level.biome.Biome> getCustomBiomeRegistry() {
@@ -666,19 +615,6 @@ public class NMSBinding implements INMSBinding {
             e.printStackTrace();
         }
         return false;
-    }
-
-    @Override
-    public ServerProperties.Paths getOptions() {
-        OptionSet options = ((CraftServer)Bukkit.getServer()).getServer().options;
-        File bukkit = (File) options.valueOf("bukkit-settings");
-        File spigot = (File) options.valueOf("spigot-settings");
-        File paperDir = (File) options.valueOf("paper-settings-directory");
-        File serverProperties = (File) options.valueOf("config");
-        String world = (String) options.valueOf("world");
-        if (world == null) world = "world";
-        
-        return new ServerProperties.Paths(serverProperties, bukkit, spigot, paperDir, world);
     }
 
     public LevelStem levelStem(RegistryAccess access, ChunkGenerator raw) {

@@ -36,7 +36,6 @@ import com.volmit.iris.util.format.C;
 import com.volmit.iris.util.format.Form;
 import com.volmit.iris.util.io.IO;
 import com.volmit.iris.util.misc.ServerProperties;
-import com.volmit.iris.util.misc.ServerProperties;
 import com.volmit.iris.util.plugin.VolmitSender;
 import com.volmit.iris.util.scheduling.J;
 import lombok.SneakyThrows;
@@ -499,7 +498,6 @@ public class CommandIris implements DecreeExecutor {
             return;
         }
 
-        File BUKKIT_YML = ServerProperties.BUKKIT_YML;
         String pathtodim = world + File.separator +"iris"+File.separator +"pack"+File.separator +"dimensions"+File.separator;
         File directory = new File(Bukkit.getWorldContainer(), pathtodim);
 
@@ -557,97 +555,5 @@ public class CommandIris implements DecreeExecutor {
         File worldContainer = Bukkit.getWorldContainer();
         File worldDirectory = new File(worldContainer, worldName);
         return worldDirectory.exists() && worldDirectory.isDirectory();
-    }
-    private void checkForBukkitWorlds(String world) {
-        FileConfiguration fc = new YamlConfiguration();
-        try {
-            fc.load(ServerProperties.BUKKIT_YML);
-            ConfigurationSection section = fc.getConfigurationSection("worlds");
-            if (section == null) {
-                return;
-            }
-
-            List<String> worldsToLoad = Collections.singletonList(world);
-
-             for (String s : section.getKeys(false)) {
-                if (!worldsToLoad.contains(s)) {
-                    continue;
-                }
-                ConfigurationSection entry = section.getConfigurationSection(s);
-                if (!entry.contains("generator", true)) {
-                    continue;
-                }
-                String generator = entry.getString("generator");
-                if (generator.startsWith("Iris:")) {
-                    generator = generator.split("\\Q:\\E")[1];
-                } else if (generator.equalsIgnoreCase("Iris")) {
-                    generator = IrisSettings.get().getGenerator().getDefaultWorldType();
-                } else {
-                    continue;
-                }
-                Iris.info("2 World: %s | Generator: %s", s, generator);
-                if (Bukkit.getWorlds().stream().anyMatch(w -> w.getName().equals(s))) {
-                    continue;
-                }
-                Iris.info(C.LIGHT_PURPLE + "Preparing Spawn for " + s + "' using Iris:" + generator + "...");
-                WorldCreator c = new WorldCreator(s)
-                        .generator(getDefaultWorldGenerator(s, generator))
-                        .environment(IrisData.loadAnyDimension(generator).getEnvironment());
-                INMS.get().createWorld(c);
-                Iris.info(C.LIGHT_PURPLE + "Loaded " + s + "!");
-            }
-        } catch (Throwable e) {
-            e.printStackTrace();
-        }
-    }
-    public ChunkGenerator getDefaultWorldGenerator(String worldName, String id) {
-        Iris.debug("Default World Generator Called for " + worldName + " using ID: " + id);
-        if (worldName.equals("test")) {
-            try {
-                throw new RuntimeException();
-            } catch (Throwable e) {
-                Iris.info(e.getStackTrace()[1].getClassName());
-                if (e.getStackTrace()[1].getClassName().contains("com.onarandombox.MultiverseCore")) {
-                    Iris.debug("MVC Test detected, Quick! Send them the dummy!");
-                    return new DummyChunkGenerator();
-                }
-            }
-        }
-        IrisDimension dim;
-        if (id == null || id.isEmpty()) {
-            dim = IrisData.loadAnyDimension(IrisSettings.get().getGenerator().getDefaultWorldType());
-        } else {
-            dim = IrisData.loadAnyDimension(id);
-        }
-        Iris.debug("Generator ID: " + id + " requested by bukkit/plugin");
-
-        if (dim == null) {
-            Iris.warn("Unable to find dimension type " + id + " Looking for online packs...");
-
-            service(StudioSVC.class).downloadSearch(new VolmitSender(Bukkit.getConsoleSender()), id, true);
-            dim = IrisData.loadAnyDimension(id);
-
-            if (dim == null) {
-                throw new RuntimeException("Can't find dimension " + id + "!");
-            } else {
-                Iris.info("Resolved missing dimension, proceeding with generation.");
-            }
-        }
-        Iris.debug("Assuming IrisDimension: " + dim.getName());
-        IrisWorld w = IrisWorld.builder()
-                .name(worldName)
-                .seed(1337)
-                .environment(dim.getEnvironment())
-                .worldFolder(new File(Bukkit.getWorldContainer(), worldName))
-                .minHeight(dim.getMinHeight())
-                .maxHeight(dim.getMaxHeight())
-                .build();
-        Iris.debug("Generator Config: " + w.toString());
-        File ff = new File(w.worldFolder(), "iris/pack");
-        if (!ff.exists() || ff.listFiles().length == 0) {
-            ff.mkdirs();
-            service(StudioSVC.class).installIntoWorld(sender, dim.getLoadKey(), ff.getParentFile());
-        }
-        return new BukkitChunkGenerator(w, false, ff, dim.getLoadKey());
     }
 }
