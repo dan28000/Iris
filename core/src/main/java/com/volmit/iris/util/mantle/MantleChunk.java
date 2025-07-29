@@ -28,7 +28,9 @@ import com.volmit.iris.util.matter.Matter;
 import com.volmit.iris.util.matter.MatterSlice;
 import lombok.Getter;
 
-import java.io.*;
+import java.io.ByteArrayOutputStream;
+import java.io.DataOutputStream;
+import java.io.IOException;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicIntegerArray;
@@ -73,31 +75,7 @@ public class MantleChunk {
      * @throws IOException            shit happens
      * @throws ClassNotFoundException shit happens
      */
-    public MantleChunk(int sectionHeight, DataInputStream din) throws IOException, ClassNotFoundException {
-        this(sectionHeight, din.readByte(), din.readByte());
-        int s = din.readByte();
-
-        for (int i = 0; i < 14; i++) {
-            flags.set(i, din.readBoolean() ? 1 : 0);
-        }
-
-        for (int i = 0; i < s; i++) {
-            Iris.addPanic("read.section", "Section[" + i + "]");
-            if (din.readBoolean()) {
-                sections.set(i, Matter.readDinOld(din));
-            }
-        }
-    }
-
-    /**
-     * Load a mantle chunk from a data stream
-     *
-     * @param sectionHeight the height of the world in sections (blocks >> 4)
-     * @param din           the data input
-     * @throws IOException            shit happens
-     * @throws ClassNotFoundException shit happens
-     */
-    public MantleChunk(int version, int sectionHeight, CountingDataInputStream din) throws IOException, RuntimeException {
+    public MantleChunk(int version, int sectionHeight, CountingDataInputStream din) throws IOException {
         this(sectionHeight, din.readByte(), din.readByte());
         int s = din.readByte();
         int l = version < 0 ? flags.length() : Varint.readUnsignedVarInt(din);
@@ -127,15 +105,8 @@ public class MantleChunk {
                 e.printStackTrace();
                 Iris.panic();
 
-                try {
-                    din.skipTo(end);
-                } catch (IOException ex) {
-                    throw new RuntimeException(ex);
-                }
-
+                din.skipTo(end);
                 TectonicPlate.addError();
-            } catch (RuntimeException e) {
-                throw new RuntimeException(e);
             }
         }
     }

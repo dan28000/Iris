@@ -17,6 +17,7 @@ import com.volmit.iris.util.json.JSONObject;
 import com.volmit.iris.util.mantle.Mantle;
 import com.volmit.iris.util.math.Vector3d;
 import com.volmit.iris.util.matter.MatterBiomeInject;
+import com.volmit.iris.util.misc.ServerProperties;
 import com.volmit.iris.util.nbt.mca.NBTWorld;
 import com.volmit.iris.util.nbt.mca.palette.*;
 import com.volmit.iris.util.nbt.tag.CompoundTag;
@@ -24,6 +25,7 @@ import com.volmit.iris.util.reflect.NMSRef;
 import com.volmit.iris.util.scheduling.J;
 import it.unimi.dsi.fastutil.objects.Object2IntMap;
 import it.unimi.dsi.fastutil.shorts.ShortList;
+import joptsimple.OptionSet;
 import net.bytebuddy.ByteBuddy;
 import net.bytebuddy.asm.Advice;
 import net.bytebuddy.matcher.ElementMatchers;
@@ -81,6 +83,7 @@ import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.NotNull;
 
 import java.awt.Color;
+import java.io.File;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
@@ -640,6 +643,19 @@ public class NMSBinding implements INMSBinding {
             e.printStackTrace();
         }
         return false;
+    }
+
+    @Override
+    public ServerProperties.Paths getOptions() {
+        OptionSet options = ((CraftServer)Bukkit.getServer()).getServer().options;
+        File bukkit = (File) options.valueOf("bukkit-settings");
+        File spigot = (File) options.valueOf("spigot-settings");
+        File paperDir = (File) options.valueOf("paper-settings-directory");
+        File serverProperties = (File) options.valueOf("config");
+        String world = (String) options.valueOf("world");
+        if (world == null) world = "world";
+        
+        return new ServerProperties.Paths(serverProperties, bukkit, spigot, paperDir, world);
     }
 
     public LevelStem levelStem(RegistryAccess access, ChunkGenerator raw) {

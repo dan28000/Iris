@@ -109,12 +109,8 @@ public interface Matter {
         return read(in, (b) -> new IrisMatter(b.getX(), b.getY(), b.getZ()));
     }
 
-    static Matter readDin(CountingDataInputStream in) throws IOException, RuntimeException {
+    static Matter readDin(CountingDataInputStream in) throws IOException {
         return readDin(in, (b) -> new IrisMatter(b.getX(), b.getY(), b.getZ()));
-    }
-
-    static Matter readDinOld(DataInputStream in) throws IOException, ClassNotFoundException {
-        return readDinOld(in, (b) -> new IrisMatter(b.getX(), b.getY(), b.getZ()));
     }
 
     /**
@@ -130,7 +126,7 @@ public interface Matter {
         return readDin(CountingDataInputStream.wrap(in), matterFactory);
     }
 
-    static Matter readDinOld(DataInputStream din, Function<BlockPosition, Matter> matterFactory) throws IOException, ClassNotFoundException {
+    static Matter readDin(CountingDataInputStream din, Function<BlockPosition, Matter> matterFactory) throws IOException {
         Matter matter = matterFactory.apply(new BlockPosition(
                 din.readInt(),
                 din.readInt(),
@@ -140,41 +136,6 @@ public interface Matter {
         Iris.addPanic("read.matter.slicecount", sliceCount + "");
 
         matter.getHeader().read(din);
-        Iris.addPanic("read.matter.header", matter.getHeader().toString());
-
-        for (int i = 0; i < sliceCount; i++) {
-            Iris.addPanic("read.matter.slice", i + "");
-            String cn = din.readUTF();
-            Iris.addPanic("read.matter.slice.class", cn);
-            try {
-                Class<?> type = Class.forName(cn);
-                MatterSlice<?> slice = matter.createSlice(type, matter);
-                slice.read(din);
-                matter.putSlice(type, slice);
-            } catch (Throwable e) {
-                e.printStackTrace();
-                throw new IOException("Can't read class '" + cn + "' (slice count reverse at " + sliceCount + ")");
-            }
-        }
-
-        return matter;
-    }
-
-    static Matter readDin(CountingDataInputStream din, Function<BlockPosition, Matter> matterFactory) throws IOException, RuntimeException {
-        Matter matter = matterFactory.apply(new BlockPosition(
-                din.readInt(),
-                din.readInt(),
-                din.readInt()));
-        Iris.addPanic("read.matter.size", matter.getWidth() + "x" + matter.getHeight() + "x" + matter.getDepth());
-        int sliceCount = din.readByte();
-        Iris.addPanic("read.matter.slicecount", sliceCount + "");
-
-        try {
-            matter.getHeader().read(din);
-        } catch (UTFDataFormatException | EOFException ex) {
-            throw new RuntimeException(ex);
-        }
-
         Iris.addPanic("read.matter.header", matter.getHeader().toString());
 
         for (int i = 0; i < sliceCount; i++) {
@@ -191,9 +152,7 @@ public interface Matter {
                 MatterSlice<?> slice = matter.createSlice(type, matter);
                 slice.read(din);
                 matter.putSlice(type, slice);
-            } catch (UTFDataFormatException | EOFException | RuntimeException e) {
-                throw new RuntimeException(e);
-            } catch (IOException | ClassNotFoundException e) {
+            } catch (Throwable e) {
                 long end = start + size;
                 if (!(e instanceof ClassNotFoundException)) {
                     Iris.error("Failed to read matter slice, skipping it.");

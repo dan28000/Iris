@@ -446,6 +446,7 @@ public class Iris extends VolmitPlugin implements Listener {
     private void enable() {
         services = new KMap<>();
         setupAudience();
+        ServerProperties.init(INMS.get().getOptions());
         Bindings.setupSentry();
         initialize("com.volmit.iris.core.service").forEach((i) -> services.put((Class<? extends IrisService>) i.getClass(), (IrisService) i));
         IO.delete(new File("iris"));

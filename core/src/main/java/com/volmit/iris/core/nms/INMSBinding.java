@@ -26,6 +26,7 @@ import com.volmit.iris.util.collection.KList;
 import com.volmit.iris.util.collection.KMap;
 import com.volmit.iris.util.mantle.Mantle;
 import com.volmit.iris.util.math.Vector3d;
+import com.volmit.iris.util.misc.ServerProperties;
 import com.volmit.iris.util.nbt.mca.palette.MCABiomeContainer;
 import com.volmit.iris.util.nbt.mca.palette.MCAPaletteAccess;
 import com.volmit.iris.util.nbt.tag.CompoundTag;
@@ -133,4 +134,6 @@ public interface INMSBinding {
     default boolean injectBukkit() {
         return true;
     }
+
+    ServerProperties.Paths getOptions();
 }
