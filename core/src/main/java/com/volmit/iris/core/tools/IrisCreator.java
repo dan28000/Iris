@@ -30,7 +30,6 @@ import com.volmit.iris.engine.platform.PlatformChunkGenerator;
 import com.volmit.iris.util.exceptions.IrisException;
 import com.volmit.iris.util.format.C;
 import com.volmit.iris.util.format.Form;
-import com.volmit.iris.util.misc.ServerProperties;
 import com.volmit.iris.util.plugin.VolmitSender;
 import com.volmit.iris.util.scheduling.J;
 import com.volmit.iris.util.scheduling.O;
@@ -47,13 +46,15 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Supplier;
 
+import static com.volmit.iris.util.misc.ServerProperties.BUKKIT_YML;
+
 /**
  * Makes it a lot easier to setup an engine, world, studio or whatever
  */
 @Data
 @Accessors(fluent = true, chain = true)
 public class IrisCreator {
-    private static final File BUKKIT_YML = ServerProperties.BUKKIT_YML;
+    private static final File BUKKIT_YML = new File("bukkit.yml");
     /**
      * Specify an area to pregenerate during creation
      */

@@ -1,5 +1,8 @@
 package com.volmit.iris.util.misc;
 
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
+
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
@@ -7,21 +10,34 @@ import java.util.Properties;
 
 public class ServerProperties {
     public static final Properties DATA = new Properties();
-    public static File SERVER_PROPERTIES = new File("server.properties");
-    public static File BUKKIT_YML = new File("bukkit.yml");
-    public static File SPIGOT_YML = new File("spigot.yml");
-    public static File PAPER_DIR = new File("config");
-    public static String LEVEL_NAME = "world";
+    public static final File SERVER_PROPERTIES;
+    public static final File BUKKIT_YML;
 
-    public static void init(Paths paths) {
-        SERVER_PROPERTIES = paths.serverProperties();
-        BUKKIT_YML = paths.bukkitYml();
-        SPIGOT_YML = paths.spigotYml();
-        PAPER_DIR = paths.paperDir();
-        String levelName = paths.levelName();
+    public static final String LEVEL_NAME;
 
-        try (FileInputStream input = new FileInputStream(SERVER_PROPERTIES)) {
-            DATA.load(input);
+    static {
+        String[] args = ProcessHandle.current()
+                .info()
+                .arguments()
+                .orElse(new String[0]);
+
+        String propertiesPath = "server.properties";
+        String bukkitYml = "bukkit.yml";
+        String levelName = null;
+
+        for (int i = 0; i < args.length; i++) {
+            String arg = args[i];
+            String next = i < args.length - 1 ? args[i + 1] : null;
+
+            propertiesPath = parse(arg, next, propertiesPath, "-c", "--config");
+            bukkitYml = parse(arg, next, bukkitYml, "-b", "--bukkit-settings");
+            levelName = parse(arg, next, levelName, "-w", "--level-name", "--world");
+        }
+
+        SERVER_PROPERTIES = new File(propertiesPath);
+        BUKKIT_YML = new File(bukkitYml);
+        try (FileInputStream in = new FileInputStream(SERVER_PROPERTIES)){
+            DATA.load(in);
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
@@ -30,5 +46,18 @@ public class ServerProperties {
         else LEVEL_NAME = DATA.getProperty("level-name", "world");
     }
 
-    public record Paths(File serverProperties, File bukkitYml, File spigotYml, File paperDir, String levelName) {}
+    private static String parse(
+            @NotNull String current,
+            @Nullable String next,
+            String fallback,
+            @NotNull String @NotNull ... keys
+    ) {
+        for (String k : keys) {
+            if (current.equals(k) && next != null)
+                return next;
+            if (current.startsWith(k + "=") && current.length() > k.length() + 1)
+                return current.substring(k.length() + 1);
+        }
+        return fallback;
+    }
 }
