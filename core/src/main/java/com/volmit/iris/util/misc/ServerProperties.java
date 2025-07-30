@@ -43,7 +43,6 @@ public class ServerProperties {
         BUKKIT_YML = new File(bukkitYml);
         SPIGOT_YML = new File(spigotYml);
         PAPER_DIR = new File(paperDir);
-        System.out.println("properties: " + SERVER_PROPERTIES + " bukkit: " + BUKKIT_YML + " spigot: " + SPIGOT_YML + " paper: " + PAPER_DIR);
         try (FileInputStream in = new FileInputStream(SERVER_PROPERTIES)){
             DATA.load(in);
         } catch (IOException e) {
