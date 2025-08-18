@@ -69,19 +69,13 @@ public class ServerBootSFG {
         }
         // Legacy ServerInfo
         String distro = Bukkit.getName().toLowerCase();
-        if (
-                !distro.contains("purpur") &&
-                        !distro.contains("paper") &&
-                        !distro.contains("spigot") &&
-                        !distro.contains("pufferfish") &&
-                        !distro.contains("bukkit")) {
-
-
+        if (!distro.contains("purpur") &&
+                !distro.contains("paper") &&
+                !distro.contains("basiclandmc")) {
             passedserversoftware = false;
             joiner.add("Server Software");
             severityMedium++;
         }
-
 
         if (INMS.get() instanceof NMSBinding1X) {
             unsuportedversion = true;
