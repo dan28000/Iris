@@ -21,12 +21,40 @@ internal fun <T, R> ResultWithDiagnostics<T>.map(transformer: (T) -> R): ResultW
     is ResultWithDiagnostics.Failure -> this
 }
 
-internal fun EvaluationResult.valueOrNull() = returnValue.valueOrNull()
-internal fun ResultValue.valueOrNull(): Any? =
+internal fun EvaluationResult.value() = returnValue.value()
+internal fun ResultValue.value(): Any? =
     when (this) {
         is ResultValue.Value -> value
+        is ResultValue.Error -> throw error
         else -> null
     }
+
+internal class FileComponents(
+    val segment: String,
+    val root: Boolean = false,
+) {
+    private val children0 = mutableMapOf<String, FileComponents>()
+    val children get() = children0.values
+
+    fun append(segment: String): FileComponents =
+        children0.computeIfAbsent(segment) { FileComponents(segment) }
+
+    override fun hashCode(): Int {
+        var result = segment.hashCode()
+        result = 31 * result + children0.hashCode()
+        return result
+    }
+
+    override fun equals(other: Any?): Boolean {
+        if (this === other) return true
+        if (other !is FileComponents) return false
+
+        if (segment != other.segment) return false
+        if (children0 != other.children0) return false
+
+        return true
+    }
+}
 
 private val workDir = File(".").normalize()
 internal fun createResolver(baseDir: File = workDir) = CompoundDependenciesResolver(baseDir)
@@ -139,7 +167,7 @@ internal fun <R> ResultWithDiagnostics<R>.valueOrThrow(message: CharSequence): R
 }
 
 internal val ScriptCompilationConfigurationKeys.dependencyResolver by PropertiesCollection.key(resolver, true)
-internal val ScriptCompilationConfigurationKeys.packDirectory by PropertiesCollection.key(workDir, true)
+internal val ScriptCompilationConfigurationKeys.packDirectory by PropertiesCollection.key<File>(null, true)
 internal val ScriptCompilationConfigurationKeys.sharedClassloader by PropertiesCollection.key(loader, true)
 
 private fun File.addPack(resolver: CompoundDependenciesResolver) = resolver.addPack(this)
