@@ -75,7 +75,7 @@ public class MultiBurst implements ExecutorService {
                             return worker;
                         }
                     },
-                    (t, e) -> e.printStackTrace(), true, 1, Runtime.getRuntime().availableProcessors(), 1, null, 60_000L, TimeUnit.MILLISECONDS);
+                    (t, e) -> e.printStackTrace(), true);
         }
 
         return service;
