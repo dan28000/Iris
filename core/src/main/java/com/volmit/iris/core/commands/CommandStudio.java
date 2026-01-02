@@ -78,6 +78,7 @@ import java.util.Arrays;
 import java.util.Date;
 import java.util.Objects;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Supplier;
 
@@ -174,14 +175,16 @@ public class CommandStudio implements DecreeExecutor {
             PlatformChunkGenerator plat = IrisToolbelt.access(world);
             Engine engine = plat.getEngine();
             DecreeContext.touch(sender);
-            try (SyncExecutor executor = new SyncExecutor(20)) {
+            try (SyncExecutor executor = new SyncExecutor(20);
+                 var service = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors())
+            ) {
                 int x = loc.getBlockX() >> 4;
                 int z = loc.getBlockZ() >> 4;
 
                 int rad = engine.getMantle().getRadius();
                 var mantle = engine.getMantle().getMantle();
                 var chunkMap = new KMap<Position2, MantleChunk>();
-                ParallelRadiusJob prep = new ParallelRadiusJob(Integer.MAX_VALUE) {
+                ParallelRadiusJob prep = new ParallelRadiusJob(Integer.MAX_VALUE, service) {
                     @Override
                     protected void execute(int rX, int rZ) {
                         if (Math.abs(rX) <= radius && Math.abs(rZ) <= radius) {
@@ -204,7 +207,7 @@ public class CommandStudio implements DecreeExecutor {
                 pLatch.await();
 
 
-                ParallelRadiusJob job = new ParallelRadiusJob(Integer.MAX_VALUE) {
+                ParallelRadiusJob job = new ParallelRadiusJob(Integer.MAX_VALUE, service) {
                     @Override
                     protected void execute(int x, int z) {
                         plat.injectChunkReplacement(world, x, z, executor);
@@ -219,22 +222,8 @@ public class CommandStudio implements DecreeExecutor {
                 job.execute(sender(), latch::countDown);
                 latch.await();
 
-                int sections = mantle.getWorldHeight() >> 4;
-                chunkMap.forEach((pos, chunk) -> {
-                    var c = mantle.getChunk(pos.getX(), pos.getZ()).use();
-                    try {
-                        c.copyFlags(chunk);
-                        c.clear();
-                        for (int y = 0; y < sections; y++) {
-                            var slice = chunk.get(y);
-                            if (slice == null) continue;
-                            var s = c.getOrCreate(y);
-                            slice.getSliceMap().forEach(s::putSlice);
-                        }
-                    } finally {
-                        c.release();
-                    }
-                });
+                chunkMap.forEach((pos, chunk) ->
+                        mantle.getChunk(pos.getX(), pos.getZ()).copyFrom(chunk));
             } catch (Throwable e) {
                 sender().sendMessage("Error while regenerating chunks");
                 e.printStackTrace();
@@ -330,11 +319,15 @@ public class CommandStudio implements DecreeExecutor {
         O<Integer> ta = new O<>();
         ta.set(-1);
 
+        var sender = sender();
+        var player = player();
+        var engine = engine();
+
         ta.set(Bukkit.getScheduler().scheduleSyncRepeatingTask(Iris.instance, () ->
         {
-            if (!player().getOpenInventory().getType().equals(InventoryType.CHEST)) {
+            if (!player.getOpenInventory().getType().equals(InventoryType.CHEST)) {
                 Bukkit.getScheduler().cancelTask(ta.get());
-                sender().sendMessage(C.GREEN + "Opened inventory!");
+                sender.sendMessage(C.GREEN + "Opened inventory!");
                 return;
             }
 
@@ -342,7 +335,7 @@ public class CommandStudio implements DecreeExecutor {
                 inv.clear();
             }
 
-            engine().addItems(true, inv, new RNG(RNG.r.imax()), tables, InventorySlotType.STORAGE, player().getWorld(), player().getLocation().getBlockX(), player().getLocation().getBlockY(), player().getLocation().getBlockZ(), 1);
+            engine.addItems(true, inv, new RNG(RNG.r.imax()), tables, InventorySlotType.STORAGE, player.getWorld(), player.getLocation().getBlockX(), player.getLocation().getBlockY(), player.getLocation().getBlockZ(), 1);
         }, 0, fast ? 5 : 35));
 
         sender().sendMessage(C.GREEN + "Opening inventory now!");
@@ -695,8 +688,14 @@ public class CommandStudio implements DecreeExecutor {
         }
 
         sender().sendMessage(C.GREEN + "Sending you to the studio world!");
-        player().teleport(Iris.service(StudioSVC.class).getActiveProject().getActiveProvider().getTarget().getWorld().spawnLocation());
-        player().setGameMode(GameMode.SPECTATOR);
+        var player = player();
+        PaperLib.teleportAsync(player(), Iris.service(StudioSVC.class)
+                .getActiveProject()
+                .getActiveProvider()
+                .getTarget()
+                .getWorld()
+                .spawnLocation()
+        ).thenRun(() -> player.setGameMode(GameMode.SPECTATOR));
     }
 
     @Decree(description = "Update your dimension projects VSCode workspace")
